@@ -15,3 +15,5 @@ py test/run.py
 ### Usage
 
 `database_setup.sql` has been enhanced with extra data that are relevant for the use case presented in the question.
+
+`database_query.sql` contains the answer to the question.
