@@ -51,11 +51,13 @@ ALTER TABLE employee ADD COLUMN practice INTEGER REFERENCES practice(uid);
 CREATE TABLE IF NOT EXISTS appointment (
     uid INTEGER PRIMARY KEY,
     employee INTEGER NOT NULL,
+    pet INTEGER NOT NULL,
     date DATE NOT NULL,
     timeslot INTEGER NOT NULL,
     reason VARCHAR,
     cancelled TIMESTAMP,
     CONSTRAINT employee_fkey FOREIGN KEY(employee) REFERENCES employee(uid),
+    CONSTRAINT pet_fkey FOREIGN KEY(pet) REFERENCES pet(uid),
     CONSTRAINT timeslot_fkey FOREIGN KEY(timeslot) REFERENCES appointment_timeslots(uid)
 );
 
