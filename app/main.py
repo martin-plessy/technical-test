@@ -1,9 +1,6 @@
 from flask import Flask, Blueprint
 from flask_restplus import Api
 
-import sys
-sys.path.append('.')
-
 app = Flask(__name__)
 
 blueprint = Blueprint('api', __name__, url_prefix='/api/v1.0')

@@ -61,23 +61,46 @@ CREATE TABLE IF NOT EXISTS appointment (
     CONSTRAINT timeslot_fkey FOREIGN KEY(timeslot) REFERENCES appointment_timeslots(uid)
 );
 
+-- Test data:
+--  * A single employee type is good enough,
+--  * 2 practices,
+--  * 3 employees: 1 in practice #1 + 2 in practice #2,
+--  * 2 pet owners,
+--  * 3 pets: 1 for owner #1 + 2 for owner #2,
+--  * The appointment timeslots already present.
+
 INSERT INTO employee_types
 (type)
 VALUES
-('Veterinarian'),
-('Nurse');
+('Veterinarian');
 
 INSERT INTO practice
 (name, telephone, manager, address, branch)
 VALUES
-('Plymouth Vets', '01752 000000', 2, '123 Test Street, Plymouth, Devon, PL1 1AA', 'Plymouth'),
-('Exeter Vets', '01392 000000', 1, '123 Test Street, Exeter, Devon, EX1 1AA', 'Exeter');
+('Plymouth Vets', '01 752 000001', 1, '123 Test Street, Plymouth, Devon, PL1 1AA', 'Plymouth'),
+('Exeter Vets', '01 392 000002', 2, '234 Test Street, Exeter, Devon, EX1 1AA', 'Exeter');
 
 INSERT INTO employee
 (name, email, telephone, employee_type, practice)
 VALUES
-('John Smith', 'john.smith@plymouthvets.co.uk', '07000 000000', 1, 1),
-('Janet Thomas', 'janet.thomas@exetervets.co.uk', '07000 000000', 2, 1);
+('Carl Smith', 'john.smith@plymouthvets.co.uk', '07 001 000001', 1, 1),
+
+('Janet Thomas', 'janet.thomas@exetervets.co.uk', '07 002 000001', 1, 2),
+('Andre Robins', 'andre.robins@exetervets.co.uk', '07 002 000002', 1, 2);
+
+INSERT INTO owner
+(name, email, telephone, address)
+VALUES
+('Timmy Jerico', 'timmy.jerico@team-cat.com', '07 465 000001', '456 Owner Square, Test City, TS7 1NG'),
+('Joseph Cramson', 'joseph.cramson@team-cat.com', '07 465 000002', '567 Owner Square, Test City, TS7 1NG');
+
+INSERT INTO pet
+(owner, name, animal, breed, date_of_birth)
+VALUES
+(1, 'Rex', 'Dog', 'Bonkus', '2019-12-24'),
+
+(2, 'Jigsaw', 'Cat', 'Chonkus', '2019-10-16'),
+(2, 'Pouic-Pouic', 'Chicken', NULL, '1963-11-20');
 
 INSERT INTO appointment_timeslots
 (timeslot_start, timeslot_end)
