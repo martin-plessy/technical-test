@@ -1,7 +1,7 @@
 from app.Appointments.appointments_resources import AppointmentResources
 from app.main import api
 from datetime import date, datetime
-from flask_restplus import abort, fields, Resource
+from flask_restplus import abort, fields, Resource, marshal
 
 ns = api.namespace('appointments', description='Manage Appointments')
 
@@ -130,7 +130,7 @@ appointment_cancellation = ns.model('AppointmentCancellation', {
 @ns.route('/<int:uid>')
 class AppointmentItemAPI(Resource):
     @ns.doc(description='Get the details of an appointment.')
-    @ns.marshal_with(appointment_details, code=200, description='The appointment details.')
+    @ns.response(200, 'The appointment details.')
     @ns.response(404, 'The appointment does not exist.')
     def get(self, uid: int):
         resources = AppointmentResources()
@@ -140,7 +140,7 @@ class AppointmentItemAPI(Resource):
         if not raw_details:
             abort(404)
 
-        return raw_details, 200
+        return marshal(raw_details, appointment_details), 200
 
     @ns.doc(description='Cancel an appointment.')
     @ns.expect(appointment_cancellation, validate=True)
