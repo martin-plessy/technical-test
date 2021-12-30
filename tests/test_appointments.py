@@ -3,6 +3,9 @@ from flask.testing import FlaskClient
 from pytest import mark
 from tests.conftest import OVERMORROW, TODAY, TOMORROW, Arrange
 
+# Booking Appointments
+# -----------------------------------------------------------------------------
+
 def test_post_valid(client: FlaskClient):
     response = client.post('/api/v1.0/appointments/', json = {
         'pet': 1,
@@ -192,3 +195,57 @@ def test_post_valid_amidst_other_appointments(client: FlaskClient, arrange: Arra
     assert response.status_code == 201
     assert response.mimetype == 'application/json'
     assert response.json['uid'] == 2
+
+# Getting Appointments by UID
+# -----------------------------------------------------------------------------
+
+def test_get_invalid_mistyped_id(client: FlaskClient):
+    assert client.get('/api/v1.0/appointments/frog').status_code == 404
+
+def test_get_invalid_non_existent(client: FlaskClient):
+    assert client.get('/api/v1.0/appointments/404').status_code == 404
+
+def test_get_valid(client: FlaskClient, arrange: Arrange):
+    created_uid = arrange.appointment(pet=1, employee=1, timeslot=1, date=TOMORROW).json['uid']
+
+    response = client.get(f'/api/v1.0/appointments/{created_uid}')
+
+    assert response.status_code == 200
+    assert response.mimetype == 'application/json'
+    assert response.json == {
+        'uid': 1,
+        'date': f'{TOMORROW}',
+        'timeslot': {
+            'start': '09:00:00',
+            'end': '09:30:00',
+        },
+        'employee': {
+            'uid': 1,
+            'name': 'Carl Smith',
+            'employee_type': {
+                'uid': 1,
+                'type': 'Veterinarian',
+            },
+        },
+        'practice': {
+            'uid': 1,
+            'name': 'Plymouth Vets',
+            'telephone': '01 752 000001',
+            'address': '123 Test Street, Plymouth, Devon, PL1 1AA',
+        },
+        'pet': {
+            'uid': 1,
+            'name': 'Rex',
+            'animal': 'Dog',
+            'breed': 'Bonkus',
+            'date_of_birth': '2019-12-24',
+        },
+        'owner': {
+            'uid': 1,
+            'name': 'Timmy Jerico',
+            'telephone': '07 465 000001',
+        },
+        'is_cancelled': False,
+        'cancellation_reason': None,
+        'cancellation_time': None,
+    }

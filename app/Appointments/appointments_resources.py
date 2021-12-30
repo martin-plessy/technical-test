@@ -55,3 +55,45 @@ class AppointmentResources:
         ''', [ employee, pet, date, timeslot ])
 
         return created_uid
+
+    def get_appointment(self, uid: int):
+        data = self.DB.select('''
+            SELECT
+                appointment.uid AS appointment_uid,
+                appointment.date AS appointment_date,
+                appointment_timeslots.timeslot_start AS appointment_start,
+                appointment_timeslots.timeslot_end AS appointment_end,
+                employee.uid AS employee_uid,
+                employee.name AS employee_name,
+                employee_types.uid AS employee_type_uid,
+                employee_types.type AS employee_type,
+                practice.uid AS practice_uid,
+                practice.name AS practice_name,
+                practice.telephone AS practice_telephone,
+                practice.address AS practice_address,
+                pet.uid AS pet_uid,
+                pet.name AS pet_name,
+                pet.animal AS pet_animal,
+                pet.breed AS pet_breed,
+                pet.date_of_birth AS pet_date_of_birth,
+                owner.uid AS owner_uid,
+                owner.name AS owner_name,
+                owner.telephone AS owner_telephone,
+                appointment.reason IS NOT NULL AS appointment_is_cancelled,
+                appointment.reason AS appointment_cancellation_reason,
+                appointment.cancelled AS appointment_cancellation_time
+
+            FROM appointment
+                INNER JOIN appointment_timeslots ON appointment_timeslots.uid = appointment.timeslot
+
+                INNER JOIN employee ON employee.uid = appointment.employee
+                    INNER JOIN employee_types ON employee_types.uid = employee.employee_type
+                    INNER JOIN practice ON practice.uid = employee.practice
+
+                INNER JOIN pet ON pet.uid = appointment.pet
+                    INNER JOIN owner ON owner.uid = pet.owner
+
+            WHERE appointment.uid = ?;
+        ''', [ uid ])
+
+        return data[0] if data else None

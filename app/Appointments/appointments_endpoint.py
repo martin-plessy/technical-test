@@ -1,11 +1,11 @@
 from app.Appointments.appointments_resources import AppointmentResources
 from app.main import api
-from datetime import date, datetime, time
+from datetime import date, datetime
 from flask_restplus import abort, fields, Resource
 
 ns = api.namespace('appointments', description='Manage Appointments')
 
-appointment_booking = api.model('AppointmentBooking', {
+appointment_booking = ns.model('AppointmentBooking', {
     'pet': fields.Integer(required=True, description='Pet\'s UID.', example=1),
     'employee': fields.Integer(required=True, description='Employee\'s UID.', example=1),
     'timeslot': fields.Integer(required=True, description='Timeslot\'s UID.', example=1),
@@ -38,7 +38,7 @@ def extra_validation(resources: AppointmentResources):
     if errors:
         abort(400, errors=errors)
 
-booked_appointment = api.model('BookedAppointment', {
+booked_appointment = ns.model('BookedAppointment', {
     'uid': fields.Integer(required=True, description='The booked appointment\'s UID.', example=1),
 })
 
@@ -84,3 +84,58 @@ class AppointmentAPI(Resource):
         )
 
         return { "uid": created_uid }, 201
+
+appointment_details = ns.model('AppointmentDetails', {
+    'uid': fields.Integer(attribute='appointment_uid', required=True, description='The appointment\'s UID.', example=1),
+    'date': fields.Date(attribute='appointment_date', required=True, description='The day of the appointment.', example='2021-07-14'),
+    'timeslot': {
+        'start': fields.String(attribute='appointment_start', required=True, description='The time of the start of the appointment.', example='09:00:00'),
+        'end': fields.String(attribute='appointment_end', required=True, description='The time of the end of the appointment.', example='09:30:00'),
+    },
+    'employee': {
+        'uid': fields.Integer(attribute='employee_uid', required=True, description='The employee\'s UID.', example=1),
+        'name': fields.String(attribute='employee_name', required=True, description='The employee\'s name.', example='Carl Smith'),
+        'employee_type': {
+            'uid': fields.Integer(attribute='employee_type_uid', required=True, description='The employee type\'s UID.', example=1),
+            'type': fields.String(attribute='employee_type', required=True, description='The employee type\'s title/label.', example='Veterinarian'),
+        },
+    },
+    'practice': {
+        'uid': fields.Integer(attribute='practice_uid', required=True, description='The practice\'s UID.', example=1),
+        'name': fields.String(attribute='practice_name', required=True, description='The practice\'s name.', example='Plymouth Vets'),
+        'telephone': fields.String(attribute='practice_telephone', required=True, description='The practice\'s telephone number.', example='01 752 000001'),
+        'address': fields.String(attribute='practice_address', required=True, description='The practice\'s physical/s-mail address.', example='123 Test Street, Plymouth, Devon, PL1 1AA'),
+    },
+    'pet': {
+        'uid': fields.Integer(attribute='pet_uid', required=True, description='The pet\'s UID.', example=1),
+        'name': fields.String(attribute='pet_name', required=True, description='The pet\'s name.', example='Rex'),
+        'animal': fields.String(attribute='pet_animal', required=True, description='The pet\'s species name.', example='Dog'),
+        'breed': fields.String(attribute='pet_breed', required=False, description='The pet\'s breed, if any.', example='Bonkus'),
+        'date_of_birth': fields.String(attribute='pet_date_of_birth', required=True, description='The pet\'s day of birth.', example='2019-12-24'),
+    },
+    'owner': {
+        'uid': fields.Integer(attribute='owner_uid', required=True, description='The owner\'s UID.', example=1),
+        'name': fields.String(attribute='owner_name', required=True, description='The owner\'s name.', example='Timmy Jerico'),
+        'telephone': fields.String(attribute='owner_telephone', required=True, description='The owner\'s telepohne number.', example='07 465 000001'),
+    },
+    'is_cancelled': fields.Boolean(attribute='appointment_is_cancelled', required=True, description='Indicates whether or not the appointment was cancelled.'),
+    'cancellation_reason': fields.String(attribute='appointment_cancellation_reason', required=False, description='If the appointment was cancelled, indicates the reason of the cancellation.'),
+    'cancellation_time': fields.DateTime(attribute='appointment_cancellation_time', required=False, description='If the appointment was cancelled, indicates day and time of the cancellation.', example='2021-12-17 18:30:00'),
+})
+
+@ns.route('/<int:uid>')
+class AppointmentItemAPI(Resource):
+    @ns.doc(description='Gets the details of an appointment.')
+    @ns.marshal_with(appointment_details, code=200, description='The appointment details.')
+    @ns.response(404, 'The appointment does not exist.')
+    def get(self, uid: int):
+        resources = AppointmentResources()
+
+        raw_details = resources.get_appointment(uid)
+
+        if not raw_details:
+            abort(404)
+
+        # xx = ns.marshal(appointment_details)
+
+        return raw_details, 200
