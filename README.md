@@ -5,20 +5,21 @@ This application is a template Flask RESTful API for back-end technical tests fo
 ### Setup
 This application requires Python 3.8
 
-To run this application, simply run the `run.py` file, this will serve the API on `localhost:5000/api/v1.0`. Swagger documentation is automatically provided for all endpoints by visiting this URL. 
+To run this application, simply run the `run.py` file, this will serve the API on `localhost:5000/api/v1.0`. Swagger documentation is automatically provided for all endpoints by visiting this URL.
 
 You will need create virtual environment in python and install the libraries listed in the requirements.txt. To do this you can run the following commands:
 
-```shell script
+```sh
 python -m venv .venv
 source .venv/Scripts/activate
 pip install -r requirements.txt
+pip install -e .
 deactivate
 ```
 
 ### Usage
 
-You do not need to do anything specific to register a namespace for this API, this step has already been completed for you. 
+You do not need to do anything specific to register a namespace for this API, this step has already been completed for you.
 The main two files you will be working with are `appointments_endpoint.py` and `appointments_resources.py`, these files handle endpoint definitions and endpoint execution code respectively.
 
 You will be interfacing with a SQLite3 database (`technical_test.db`) for this test, which mirrors the same schema found in the ERD in the previous section. Some data has been provided for some tables, however most tables are empty, you may use whatever test data you wish.
