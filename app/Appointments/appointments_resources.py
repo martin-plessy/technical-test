@@ -20,7 +20,7 @@ class AppointmentResources:
         return datetime.strptime(slot['timeslot_start'], '%H:%M:%S').time()
 
     def pet_has_appointment(self, pet: int, timeslot: int, date: date) -> bool:
-        return bool(self.DB.select(''' SELECT 1 FROM appointment WHERE pet = ? AND timeslot = ? AND date = ? ''', [ pet, timeslot, date ]))
+        return bool(self.DB.select(''' SELECT 1 FROM appointment WHERE pet = ? AND timeslot = ? AND date = ? AND cancelled IS NULL ''', [ pet, timeslot, date ]))
 
     def pet_owner_has_appointment(self, pet: int, employee: int, timeslot: int, date: date) -> bool:
         return bool(self.DB.select('''
@@ -43,10 +43,11 @@ class AppointmentResources:
             )
             AND appointment.timeslot = ?
             AND appointment.date = ?
+            AND cancelled IS NULL
         ''', [ pet, employee, timeslot, date ]))
 
     def employee_has_appointment(self, employee: int, timeslot: int, date: date) -> bool:
-        return bool(self.DB.select(''' SELECT 1 FROM appointment WHERE employee = ? AND timeslot = ? AND date = ? ''', [ employee, timeslot, date ]))
+        return bool(self.DB.select(''' SELECT 1 FROM appointment WHERE employee = ? AND timeslot = ? AND date = ? AND cancelled IS NULL ''', [ employee, timeslot, date ]))
 
     def create_appointment(self, pet: int, employee: int, timeslot: int, date: date) -> int:
         created_uid = self.DB.insert('''
@@ -79,7 +80,7 @@ class AppointmentResources:
                 owner.uid AS owner_uid,
                 owner.name AS owner_name,
                 owner.telephone AS owner_telephone,
-                appointment.reason IS NOT NULL AS appointment_is_cancelled,
+                appointment.cancelled IS NOT NULL AS appointment_is_cancelled,
                 appointment.reason AS appointment_cancellation_reason,
                 appointment.cancelled AS appointment_cancellation_time
 
@@ -93,7 +94,21 @@ class AppointmentResources:
                 INNER JOIN pet ON pet.uid = appointment.pet
                     INNER JOIN owner ON owner.uid = pet.owner
 
-            WHERE appointment.uid = ?;
+            WHERE appointment.uid = ?
         ''', [ uid ])
 
         return data[0] if data else None
+
+    def cancel_appointment(self, uid: int, reason: str):
+        updated_count = self.DB.update('''
+            UPDATE appointment
+            SET
+                reason = ?,
+                cancelled = CASE
+                    WHEN cancelled IS NULL THEN CURRENT_TIMESTAMP
+                    ELSE cancelled
+                END
+            WHERE uid = ?
+        ''', [ reason, uid ])
+
+        return updated_count == 1

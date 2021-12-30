@@ -30,7 +30,7 @@ class Arrange:
 
     def appointment(self, pet: int, employee: int, timeslot: int, date: date = TOMORROW):
         """
-        Books an appointment for the date of tomorrow.
+        Books an appointment.
         """
 
         response = self._client.post('/api/v1.0/appointments/', json = {
@@ -43,3 +43,19 @@ class Arrange:
         assert response.status_code == 201
 
         return response
+
+    def cancelled_appointment(self, pet: int, employee: int, timeslot: int, date: date = TOMORROW):
+        """
+        Books an appointment and subsequently cancels it.
+        """
+
+        post_response = self.appointment(pet=pet, employee=employee, timeslot=timeslot, date=date)
+        created_uid = post_response.json['uid']
+
+        delete_response = self._client.delete(f'/api/v1.0/appointments/{created_uid}', json = {
+            'reason': 'Cancelled for testing purposes.'
+        })
+
+        assert delete_response.status_code == 204
+
+        return post_response

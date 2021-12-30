@@ -120,12 +120,16 @@ appointment_details = ns.model('AppointmentDetails', {
     },
     'is_cancelled': fields.Boolean(attribute='appointment_is_cancelled', required=True, description='Indicates whether or not the appointment was cancelled.'),
     'cancellation_reason': fields.String(attribute='appointment_cancellation_reason', required=False, description='If the appointment was cancelled, indicates the reason of the cancellation.'),
-    'cancellation_time': fields.DateTime(attribute='appointment_cancellation_time', required=False, description='If the appointment was cancelled, indicates day and time of the cancellation.', example='2021-12-17 18:30:00'),
+    'cancellation_time': fields.String(attribute='appointment_cancellation_time', required=False, description='If the appointment was cancelled, indicates day and time of the cancellation.', example='2021-12-17 18:30:00'),
+})
+
+appointment_cancellation = ns.model('AppointmentCancellation', {
+    'reason': fields.String(required=False, description='The reason why the appointment is being cancelled.')
 })
 
 @ns.route('/<int:uid>')
 class AppointmentItemAPI(Resource):
-    @ns.doc(description='Gets the details of an appointment.')
+    @ns.doc(description='Get the details of an appointment.')
     @ns.marshal_with(appointment_details, code=200, description='The appointment details.')
     @ns.response(404, 'The appointment does not exist.')
     def get(self, uid: int):
@@ -136,6 +140,17 @@ class AppointmentItemAPI(Resource):
         if not raw_details:
             abort(404)
 
-        # xx = ns.marshal(appointment_details)
-
         return raw_details, 200
+
+    @ns.doc(description='Cancel an appointment.')
+    @ns.expect(appointment_cancellation, validate=True)
+    @ns.response(204, 'The appointment was cancelled.')
+    @ns.response(400, 'One of the input fields is missing, has a wrong format, or an inconsistent value.')
+    @ns.response(404, 'The appointment does not exist.')
+    def delete(self, uid: int):
+        resources = AppointmentResources()
+
+        if not resources.cancel_appointment(uid, api.payload.get('reason') or 'No reason was provided for this cancellation.'):
+            abort(404)
+
+        return '', 204

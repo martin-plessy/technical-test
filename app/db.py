@@ -47,7 +47,7 @@ class DatabaseConnection:
 
         return response
 
-    def _execute(self, query: str, expect_return: bool = False, return_last_row_id: bool = False, script: bool = False, parameters: Iterable[Any] = []):
+    def _execute(self, query: str, expect_return: bool = False, return_last_row_id: bool = False, return_row_count: bool = False, script: bool = False, parameters: Iterable[Any] = []):
         if self.conn is None:
             self._connect()
 
@@ -68,6 +68,8 @@ class DatabaseConnection:
 
                 if return_last_row_id:
                     return cursor.lastrowid
+                elif return_row_count:
+                    return cursor.rowcount
                 elif expect_return:
                     return self._label_rows(cursor.fetchall(), cursor.description)
                 else:
@@ -88,8 +90,8 @@ class DatabaseConnection:
     def insert(self, query: str, parameters: Iterable[Any] = [], expect_return: bool = False, return_last_row_id: bool = True):
         return self._execute(query, expect_return=expect_return, parameters=parameters, return_last_row_id=not expect_return and return_last_row_id)
 
-    def update(self, query: str, parameters: Iterable[Any] = [], expect_return: bool = False):
-        return self._execute(query, expect_return=expect_return, parameters=parameters)
+    def update(self, query: str, parameters: Iterable[Any] = [], expect_return: bool = False, return_row_count: bool = True):
+        return self._execute(query, expect_return=expect_return, parameters=parameters, return_row_count=not expect_return and return_row_count)
 
     def delete(self, query: str, parameters: Iterable[Any] = []):
         return self._execute(query, expect_return=False, parameters=parameters)

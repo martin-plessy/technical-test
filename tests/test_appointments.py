@@ -1,7 +1,9 @@
-from typing import Any, Mapping
 from flask.testing import FlaskClient
 from pytest import mark
+from re import match
 from tests.conftest import OVERMORROW, TODAY, TOMORROW, Arrange
+from time import sleep
+from typing import Any, Dict, Mapping
 
 # Booking Appointments
 # -----------------------------------------------------------------------------
@@ -183,6 +185,13 @@ def test_post_conflict_double_click(client: FlaskClient, arrange: Arrange):
     dict(pet=1, employee=2, timeslot=3, date=TOMORROW), # The employee is booked at this day, but another time.
 ])
 def test_post_valid_amidst_other_appointments(client: FlaskClient, arrange: Arrange, arrange_data: Mapping[str, Any]):
+    # Cancelled appointments don't cause conflicts.
+    arrange.cancelled_appointment(pet=2, employee=3, timeslot=2) # Pet has appointment in the same practice.
+    arrange.cancelled_appointment(pet=2, employee=1, timeslot=2) # Pet has appointment in another practice.
+    arrange.cancelled_appointment(pet=3, employee=1, timeslot=2) # Owner has appointment in another practice.
+    arrange.cancelled_appointment(pet=1, employee=2, timeslot=2) # Employee has appointment.
+    arrange.cancelled_appointment(pet=2, employee=2, timeslot=2) # Double click.
+
     arrange.appointment(**arrange_data)
 
     response = client.post('/api/v1.0/appointments/', json = {
@@ -194,7 +203,7 @@ def test_post_valid_amidst_other_appointments(client: FlaskClient, arrange: Arra
 
     assert response.status_code == 201
     assert response.mimetype == 'application/json'
-    assert response.json['uid'] == 2
+    assert response.json['uid'] == 7
 
 # Getting Appointments by UID
 # -----------------------------------------------------------------------------
@@ -249,3 +258,67 @@ def test_get_valid(client: FlaskClient, arrange: Arrange):
         'cancellation_reason': None,
         'cancellation_time': None,
     }
+
+# Cancelling Appointments by UID
+# -----------------------------------------------------------------------------
+
+def test_delete_invalid_mistyped_id(client: FlaskClient):
+    assert client.delete('/api/v1.0/appointments/frog', json = {}).status_code == 404
+
+def test_delete_invalid_non_existent(client: FlaskClient):
+    assert client.delete('/api/v1.0/appointments/404', json = {}).status_code == 404
+
+def test_delete_invalid_mistyped_reason(client: FlaskClient, arrange: Arrange):
+    created_uid = arrange.appointment(pet=1, employee=1, timeslot=1).json['uid']
+
+    response = client.delete(f'/api/v1.0/appointments/{created_uid}', json = {
+        'reason': 42
+    })
+
+    assert response.status_code == 400
+    assert response.mimetype == 'application/json'
+    assert response.json['errors']['reason'] == '42 is not of type \'string\''
+
+@mark.parametrize(('input', 'expected_reason'), [
+    ({ }, 'No reason was provided for this cancellation.'),
+    ({ 'reason': 'Cancelled for testing purposes.' }, 'Cancelled for testing purposes.'),
+])
+def test_delete_valid(client: FlaskClient, arrange: Arrange, input: Dict[str, Any], expected_reason: str):
+    created_uid = arrange.appointment(pet=1, employee=1, timeslot=1).json['uid']
+
+    response = client.delete(f'/api/v1.0/appointments/{created_uid}', json = input)
+
+    assert response.status_code == 204
+    assert response.data == b''
+
+    response = client.get(f'/api/v1.0/appointments/{created_uid}')
+
+    assert response.status_code == 200
+    assert response.mimetype == 'application/json'
+    assert response.json['is_cancelled'] == True
+    assert response.json['cancellation_reason'] == expected_reason
+    assert match('^2[01]\\d{2}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$', response.json['cancellation_time']) is not None
+
+def test_delete_valid_duplicate_update_reason_but_not_time(client: FlaskClient, arrange: Arrange):
+    created_uid = arrange.appointment(pet=1, employee=1, timeslot=1).json['uid']
+
+    client.delete(f'/api/v1.0/appointments/{created_uid}', json = {
+        'reason': 'A'
+    })
+
+    response = client.get(f'/api/v1.0/appointments/{created_uid}')
+
+    assert response.json['cancellation_reason'] == 'A'
+
+    cancellation_time = response.json['cancellation_time']
+
+    sleep(1)
+
+    client.delete(f'/api/v1.0/appointments/{created_uid}', json = {
+        'reason': 'B'
+    })
+
+    response = client.get(f'/api/v1.0/appointments/{created_uid}')
+
+    assert response.json['cancellation_reason'] == 'B'
+    assert response.json['cancellation_time'] == cancellation_time
