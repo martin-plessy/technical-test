@@ -1,4 +1,5 @@
 import sqlite3, os
+from typing import Any, Iterable
 
 
 class DatabaseConnection:
@@ -46,7 +47,7 @@ class DatabaseConnection:
 
         return response
 
-    def _execute(self, query: str, expect_return: bool = False, script: bool = False):
+    def _execute(self, query: str, expect_return: bool = False, return_last_row_id: bool = False, script: bool = False, parameters: Iterable[Any] = []):
         if self.conn is None:
             self._connect()
 
@@ -61,11 +62,13 @@ class DatabaseConnection:
                 if script:
                     cursor.executescript(query)
                 else:
-                    cursor.execute(query)
+                    cursor.execute(query, parameters)
 
                 self.conn.commit()
 
-                if expect_return:
+                if return_last_row_id:
+                    return cursor.lastrowid
+                elif expect_return:
                     return self._label_rows(cursor.fetchall(), cursor.description)
                 else:
                     return True
@@ -79,14 +82,14 @@ class DatabaseConnection:
 
                     return False
 
-    def select(self, query: str):
-        return self._execute(query, expect_return=True)
+    def select(self, query: str, parameters: Iterable[Any] = []):
+        return self._execute(query, expect_return=True, parameters=parameters)
 
-    def insert(self, query: str, expect_return: bool = False):
-        return self._execute(query, expect_return=expect_return)
+    def insert(self, query: str, parameters: Iterable[Any] = [], expect_return: bool = False, return_last_row_id: bool = True):
+        return self._execute(query, expect_return=expect_return, parameters=parameters, return_last_row_id=not expect_return and return_last_row_id)
 
-    def update(self, query: str, expect_return: bool = False):
-        return self._execute(query, expect_return=expect_return)
+    def update(self, query: str, parameters: Iterable[Any] = [], expect_return: bool = False):
+        return self._execute(query, expect_return=expect_return, parameters=parameters)
 
-    def delete(self, query: str):
-        return self._execute(query, expect_return=False)
+    def delete(self, query: str, parameters: Iterable[Any] = []):
+        return self._execute(query, expect_return=False, parameters=parameters)
