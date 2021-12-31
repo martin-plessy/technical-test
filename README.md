@@ -5,6 +5,8 @@ This application is a template Flask RESTful API for back-end technical tests fo
 ### Setup
 This application requires Python 3.8
 
+To run the tests, simply run the `pytest` command from the virtual environment.
+
 To run this application, simply run the `run.py` file, this will serve the API on `localhost:5000/api/v1.0`. Swagger documentation is automatically provided for all endpoints by visiting this URL.
 
 You will need create virtual environment in python and install the libraries listed in the requirements.txt. To do this you can run the following commands:
